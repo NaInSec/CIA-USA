@@ -1,0 +1,128 @@
+ <html>
+<title>Air Force Middleware Home Use User Agreement</title>
+<HTA:APPLICATION 
+     ID="objMyHTA" 
+     APPLICATIONNAME="Air Force Middleware Home Use User Agreement"
+     SCROLL="yes"
+     SINGLEINSTANCE="yes"
+     WINDOWSTATE="normal"
+>
+
+<!-- ************************* -->
+
+<head>
+<script language="vbscript">
+'==========================================================================
+'    Air Force Middleware Home Use User Agreement
+'          Developed by AF PKI SPO
+'          Last updated:  12 Aug 2008
+'
+'	                    
+'    GENERAL INFO: 
+'    This utility allows a user to indicate whether they accept the conditions of 
+'    installing AF software on their non-government machine.  This wording 
+'    was reviewed and approved by AF General Counsel at Lackland AFB.
+'==========================================================================
+
+'Option Explicit
+'On Error Resume Next
+
+' variable declarations
+Dim WshShell							'Windows shell object
+Dim objOutFile							'Error File object
+Dim objFSO								'File object
+
+
+Dim strCmd								'String to build command in
+Dim intRet
+
+
+
+
+
+
+'=====================================================================================
+'    When window gets loaded
+'=====================================================================================
+Sub Window_OnLoad
+'	self.ResizeTo 600,600				'Resize window
+'	self.MoveTo 10,10	
+
+
+
+End Sub
+
+'=====================================================================================
+'     Exit Button Clicked
+'=====================================================================================
+Sub exitsub
+   
+   window.close()  
+     
+end Sub
+
+'=====================================================================================
+'    Submit Button Clicked
+'=====================================================================================
+Sub btnOK_OnClick
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+Set WshShell = CreateObject("WScript.Shell")
+
+if UserOption2(0).Checked Then			'Install selected
+
+	If objFSO.FolderExists("C:\Windows") Then
+   		set objFolder = objFSO.CreateFolder("C:\Windows\agreedtorisk")
+	Else
+   		set objFolder = objFSO.CreateFolder("C:\Windows")
+   		set objFolder = objFSO.CreateFolder("C:\Windows\agreedtorisk")
+	End If
+Else
+End If
+
+window.close()			
+ 
+End Sub
+
+
+
+
+</script>
+
+<body STYLE=FONT:14pt arial;COLOR:white">
+	<table border="0" width="98%" height="47" ID="Table1">
+		<tr>
+			<td width="95%" height="130">
+				<p align="center">
+					<font size="4"><b>AC 6.1 Air Force Release User Agreement</b></font></p>
+								
+					<br><b>ACCEPTANCE:</b> Please read the following Terms of Use and Disclaimer carefully before installing and using Home Use Middleware.  By installing this package  you indicate that you have read the following terms and agree to be bound and comply with the terms as set forth. If you do not so agree, please promptly exit and do not install the package on your computer.<br><br><b>TERMS OF USE:</b> The middleware you are about to install is licensed and provided by the United States Air Force (USAF) for home computer use.  This package is distributed under licenses restricting its use, duplication and distribution.  It is for official use only, to be used only for accessing Department of Defense (DoD) Web sites, systems, and networks with the user's Common Access Card (CAC).  Dissemination to non-AF employees is not authorized.  By installing and using this Home Use Middleware package,  you ("user") signify your agreement to the terms and conditions as set forth.  If you do not agree to this Agreement, do not install or use this package. Ensure your workstation has an anti-virus software package with the latest up-to-date releases installed.  <br>
+
+<table border="0" width="75%" ID="Table5">
+					<tr>
+						<td width="150" style="WIDTH: 150px; HEIGHT: 39px"></td>
+						<td width="65%" style="HEIGHT: 39px"></td>
+					</tr>
+					<tr>
+						<td width="150" style="WIDTH: 200px"></td>
+					</tr>
+
+					<tr>
+						<td width="150" style="WIDTH: 200px"><input type="radio" name="UserOption2" value="1" ID="Radio3"></td>
+						<td width="95%">I have read and understand the User Agreement and hereby accept the conditions of installing and using the Home User Middleware package.</td>
+					</tr>
+                              				
+					
+					<tr>
+						<td width="150" style="WIDTH: 150px"><input type="radio" name="UserOption2" value="2" ID="Radio4"></td>
+						<td width="95%"><br>I have read and understand the User Agreement.  I DO NOT accept the conditions stated and will not install or use this package. </td>
+					</tr>
+				</table>
+			</td>
+				
+	</table>
+
+
+	<input type="button" value="SUBMIT" name="btnOK" ID="Button1"> <input id="Exitbutton" type="button" value="EXIT" name="Exitbutton" onClick="ExitSub">
+	
+	<p>&nbsp;</p>
+</body>

@@ -1,0 +1,336 @@
+<html>
+<title>AC 6.1 v2 Air Force Release Home Use Install/Uninstall Utility</title>
+<HTA:APPLICATION 
+     ID="objMyHTA" 
+     APPLICATIONNAME="AC 6.1 Air Force Release Home Use Install/Uninstall Utility"
+     SCROLL="yes"
+     SINGLEINSTANCE="yes"
+     WINDOWSTATE="maximize"
+>
+
+<!-- ************************* -->
+
+<head>
+<script language="vbscript">
+'==========================================================================
+'    AC 6.1 Air Force Release Home Use Install/Uninstall Utility
+'          Developed by AF PKI SPO
+'          Last updated:  08/15/2008
+'
+'	                    
+'    GENERAL INFO: 
+'    This utility allows the user to choose to install or uninstall AC 6.1 AFR for use on home workstations.
+'    If installation is chosen, this utility also installs the following in addition to AC 6.1 AFR:
+'        -- Windows Installer ver 3.1 (req'd for AC 6.1 install)
+'        -- Microsoft Visual C++ 2005 Runtime Libraries (req'd for AC 6.1 install)
+'	 -- Trust in DoD and AF PKI certificates on the workstation (for ease in accessing DoD secure sites) 
+'    
+'    Added 8/21/07:  Latest AC 6.1 patch 0707004 added to match SDC v1.5/2.0.  This increases AC 6.1 Build to 38.
+'    Added 8/12/08:  Latest AC 6.1 patch. This increases AC 6.1 Build to 100.
+'    Added 8/12/08:  Latest NIPRDODCert v4.0 adding CA 19 and 20
+'    Added 8/12/08:  Additional words to the User Agreement to indicate the need for Anti-virus software
+'   
+'==========================================================================
+
+Option Explicit
+On Error Resume Next
+
+' variable declarations
+Dim WshShell							'Windows shell object
+Dim objOutFile							'Error File object
+Dim objFSO								'File object
+Dim intRet			
+Dim strCmd								'String to build command in
+Dim agreestatus							'Indicates whether user has agreed to risk
+Dim objItem
+Dim objShell
+Dim objWMIService							'WMI object
+Dim objOS								'Operating System object
+Dim strOS								'String for Operating System
+Dim strSP
+Dim colOSes
+Dim strExecuteCall                     			 'Flag to indicate whether to continue install or not 
+Dim locMSIE								 'Location of "MSIE" within browser string
+Dim strIE								 'IE version - string
+Dim numberIE							 'IE version - converted to numeric
+
+
+
+
+'=====================================================================================
+'    When window gets loaded
+'=====================================================================================
+Sub Window_OnLoad
+'	self.ResizeTo 600,600				'Resize window
+'	self.MoveTo 10,10	
+
+
+section1.InnerHTML = "<center> </center>"
+End Sub
+
+'=====================================================================================
+'     Exit Button Clicked
+'=====================================================================================
+Sub exitsub
+   section1.InnerHTML = "<font color='white'>Quit button pushed </font>" 
+   window.close()       
+end Sub
+
+'=====================================================================================
+'    Submit Button Clicked
+'=====================================================================================
+Sub btnOK_OnClick
+Set WshShell = CreateObject("WScript.Shell")
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+
+strSP = 0
+strExecuteCall = 0
+agreestatus = 0						
+
+		
+if UserOption2(0).Checked Then			'Install option selected by user
+		
+		RiskAgreement()  				'Display User Agreement
+    
+		If agreestatus = 0 Then              
+	            msgbox "You did not indicate acceptance of the User Agreement.  Installation will not continue.  If you want to install ActivClient 6.1, run this program again and select the button indicating your acceptance of User Agreement."
+			window.close
+		Else
+
+		Operating_System						'Get OS & IE info 
+								'
+			If strExecuteCall = 0 Then                'If OS & IE did not meet min reqmts, then stop
+				window.close()
+			Else
+
+				InstallAC()	
+				msgbox "ActivClient 6.1 installation is complete, unless you previously received a pop-up informing you of a problem preventing installation.   Please reboot your workstation as soon as practical in order to access all ActivClient 6.1 features.  If you were notified of problems preventing AC 6.1 installation, please correct those and then try using this installation utility again.",0,"AC 6.1 Home Use Installation" 
+            	End If
+		End If
+				 
+elseif UserOption2(1).Checked Then		'Uninstall option selected by user
+		
+		
+		UninstallAC()
+			
+	
+End If
+
+window.close()
+
+End Sub
+
+
+'=====================================================================================
+'    Install AC 6.1 and Certificate Trust
+'=====================================================================================
+Sub InstallAC()
+
+section1.InnerHTML = "<font color='yellow'><br>Please wait; installation is in process.  You may not see any activity for several minutes during certain steps (particularly Step 2), depending on your present workstation configuration.  Please be patient.   You will be notified when installation is complete. <br><br>Step 1 of 5:  Installing Trust in DoD and Air Force PKI Certificates -- </font><font color = 'red'>in process </font>"
+
+
+
+strCmd = "NIPRDODCerts_v4_0.exe"				     'Install Trust in DoD & AF PKI Certicates 
+intRet = WshShell.Run (strCmd, 1, true)	
+
+
+section1.InnerHTML = "<font color='yellow'><br>Please wait; installation is in process.  You may not see any activity for several minutes during certain steps (particularly Step 2), depending on your present workstation configuration.  Please be patient.   You will be notified when installation is complete. <br><br>Step 1 of 5:  Installing Trust in DoD and Air Force PKI Certificates -- </font><font color = 'lime'> completed. <br></font><font color = 'yellow'>Step 2 of 5:  Updating Windows Installer -- </font><font color = 'red'>in process </font>"
+
+
+strCmd = "WindowsInstaller_KB893803_v2_x86.exe /norestart /quiet"    'Install Windows Installer 3.1 - required for AC 6.1 install
+intRet = WshShell.Run (strCmd, 1, true)	
+
+
+section1.InnerHTML = "<font color='yellow'><br>Please wait; installation is in process.  You may not see any activity for several minutes during certain steps (particularly Step 2), depending on your present workstation configuration.  Please be patient.   You will be notified when installation is complete. <br><br>Step 1 of 5:  Installing Trust in DoD and Air Force PKI Certificates -- </font><font color = 'lime'> completed. <br></font><font color = 'yellow'>Step 2 of 5:  Updating Windows Installer -- </font><font color = 'lime'> completed. <br></font><font color = 'yellow'>Step 3 of 5: Installing C++ Redistributable Package -- </font><font color = 'red'>in process </font>"
+
+strCmd = "vcredist_x86.exe /Q"   			         'Install Microsoft Visual C++ 2005 Run time libraries - required for AC 6.1 install
+intRet = WshShell.Run (strCmd, 1, true)	
+
+
+section1.InnerHTML = "<font color='yellow'><br>Please wait; installation is in process.  You may not see any activity for several minutes during certain steps (particularly Step 2), depending on your present workstation configuration.  Please be patient.   You will be notified when installation is complete. <br><br>Step 1 of 5:  Installing Trust in DoD and Air Force PKI Certificates -- </font><font color = 'lime'>completed. <br></font><font color = 'yellow'>Step 2 of 5:  Updating Windows Installer -- </font><font color = 'lime'>completed. <br></font><font color = 'yellow'>Step 3 of 5: Installing C++ Redistributable Package -- </font><font color = 'lime'>completed.<br></font><font color = 'yellow'>Step 4 of 5: Installing OWA S/MIME Component -- </font><font color = 'red'>in process <br></font>"
+
+
+strCmd = "setupmcl.exe"   			         'Install OWA SMIME component
+intRet = WshShell.Run (strCmd, 1, true)	
+
+section1.InnerHTML = "<font color='yellow'><br>Please wait; installation is in process.  You may not see any activity for several minutes during certain steps (particularly Step 2), depending on your present workstation configuration.  Please be patient.   You will be notified when installation is complete. <br><br>Step 1 of 5:  Installing Trust in DoD and Air Force PKI Certificates -- </font><font color = 'lime'>completed. <br></font><font color = 'yellow'>Step 2 of 5:  Updating Windows Installer -- </font><font color = 'lime'>completed. <br></font><font color = 'yellow'>Step 3 of 5: Installing C++ Redistributable Package -- </font><font color = 'lime'>completed.<br></font><font color = 'yellow'>Step 4 of 5: Installing OWA S/MIME Component -- </font><font color = 'lime'> completed<br></font><font color = 'yellow'>Step 5 of 5:  Installing ActivClient 6.1 --  </font><font color = 'red'>in process </font>"
+
+
+strCmd = "msiexec /i ActivClient6_1_homeuse_v2.msi /qb! REBOOT=ReallySuppress"   	 'Install AC6.1
+intRet = WshShell.Run (strCmd, 1, true)	
+
+strCmd = "msiexec /p AC61_build100.msp /qb! REBOOT=ReallySuppress"   	 			'Install AC6.1 Patch 0707004
+intRet = WshShell.Run (strCmd, 1, true)
+	
+section1.InnerHTML = "<font color='yellow'><br>Please wait; installation is in process.  You may not see any activity for several minutes during certain steps (particularly Step 2), depending on your present workstation configuration.  Please be patient.   You will be notified when installation is complete. <br><br>Step 1 of 5:  Installing Trust in DoD and Air Force PKI Certificates -- </font><font color = 'lime'>completed. <br></font><font color = 'yellow'>Step 2 of 5:  Updating Windows Installer -- </font><font color = 'lime'>completed. <br></font><font color = 'yellow'>Step 3 of 5: Installing C++ Redistributable Package -- </font><font color = 'lime'>completed.<br></font><font color = 'yellow'>Step 4 of 5: Installing OWA S/MIME Component -- </font><font color = 'lime'>completed.<br></font><font color = 'yellow'>Step 5 of 5: Installing ActivClient 6.1 -- </font><font color = 'lime'>completed.</font>"
+
+If objFSO.FolderExists("C:\windows") Then		'Loading AF image.  Check first to see if Windows
+								'directory exists; if not create directory before copy.
+   
+  objFSO.CopyFile "ac60AirForceImage.bmp", "C:\windows\ac60AirForceImage.bmp"           
+Else
+  
+  set objFolder = objFSO.CreateFolder("C:\Windows") 
+  objFSO.CopyFile "ac60AirForceImage.bmp", "C:\Windows\ac60AirForceImage.bmp"  
+         
+End If
+       
+End Sub
+
+'=====================================================================================
+'    Uninstall AC 6.1
+'=====================================================================================
+Sub UninstallAC()
+
+
+
+strCmd = "msiexec /x {AC194855-F7AC-4D04-B4C9-07BA46FCB697} /qb! REBOOT=ReallySuppress"
+intRet = WshShell.Run (strCmd, 1, true)	
+
+msgbox "ActivClient 6.1 uninstallation is complete. Please reboot your workstation as soon as practical in order to completely remove all ActivClient 6.1 files.",0,"AC 6.1 Home Use Uninstall" 
+		
+
+End Sub
+
+'******************************************************************************
+'   Home Use Risk Agreement
+'******************************************************************************
+Sub RiskAgreement()
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+
+strCmd = ".\homeuserisk.hta"
+
+
+intRet = WshShell.Run (strCmd,1,true)
+
+If objFSO.FolderExists("C:\Windows\agreedtorisk") Then            'If folder exists then user agreed
+	agreestatus = 1							      'Set Flag that risk was agreed to
+      objFSO.DeleteFolder("C:\Windows\agreedtorisk")			'Delete folder created temporarily
+	
+End If
+	
+
+End Sub 
+
+'==============================================================================
+'	Gather Operating System Info
+'==============================================================================
+sub Operating_System
+On Error Resume Next
+Set objWMIService = GetObject("winmgmts:\\" & ".")
+
+  If Err.Number = 0 Then                              'OS lower than Windows 2000 do not support WMI and should generate
+                                                      'an error.  If so, display error message to user and do not install.
+  
+      Set colOSes = objWMIService.ExecQuery _
+       ("Select * from Win32_OperatingSystem")
+      For Each objOS in colOSes
+        strOS = objOS.Caption
+        strSP =  objOS.ServicePackMajorVersion
+ 
+      Next
+      
+	    
+      If (instr(strOS, "2000")) > 0 Then                 'If Windows 2000 SP 4  then set flag to continue install
+          If strSP > 3 Then 
+              strExecuteCall = 1
+           End If
+      End If
+      
+      If (instr(strOS, "2003")) > 0 Then                 'If Windows 20003   then set flag to continue install
+          strExecuteCall = 1
+      End If
+
+      If (instr(strOS, "XP Professional")) > 0 then                 'If Windows XP Professional SP1 or higher then set flag to continue install
+          If strSP > 0 Then 
+            strExecuteCall = 1
+          End If
+      End If 
+
+ 	If (instr(strOS, "XP Home")) > 0 then                  'If Windows XP Home SP2 or higher then set flag to continue install
+          If strSP > 1 Then 
+            strExecuteCall = 1
+          End If
+      End If 
+
+	If (instr(strOS, "Vista")) > 0 then                  'If Windows Vista then set flag to continue install
+          
+            strExecuteCall = 1
+          
+      End If 
+
+
+
+   
+      If strExecuteCall = 0 Then
+		msgbox "Your machine does not meet the minimum Operating System requirements for this software.  One of the following Operating Systems with appropriate Service Pack is required:  Windows 2000 Professional(Service Pack 4 or higher), Windows XP Home Edition (Service Pack 2 or higher), Windows XP Professional(Service Pack 1 or higher), or Windows Vista (any edition).  Installation will be cancelled.",0,"AC 6.1 Home Use Installation"
+      Else                                 'Check for at least IE 5.5
+            
+		locMSIE = inStr(window.navigator.appversion, "MSIE")
+		locMSIE = locMSIE + 5
+		strIE = mid(window.navigator.appversion, locMSIE,3)
+		
+		If strIE < 5.5 Then
+   			msgbox "Your Internet Explorer needs to be upgraded before AC 6.1 can be installed.  Installation will not continue.  Please upgrade to IE 6.0 or higher then try the install again.",0,"AC 6.1 Home Use Installation"
+		      strExecuteCall = 0        'Set flag to stop install
+            End If
+
+      End If
+
+  Else 
+ 
+      msgbox "Your machine does not meet the minimum Operating System requirements for this software.  One of the following Operating Systems with appropriate Service Pack is required:  Windows 2000 Professional(Service Pack 4 or higher), Windows XP Home Edition (Service Pack 2 or higher), Windows XP Professional(Service Pack 1 or higher), or Windows Vista (any edition).  Installation will be cancelled.",0,"AC 6.1 Home Use Installation"
+      Err.Clear()
+  End If
+
+
+  End Sub
+
+'*********************************************************************************
+'   User Screen
+'*********************************************************************************
+
+
+
+</script>
+
+<body STYLE="BACKGROUND:DarkBlue;FONT:14pt arial;COLOR:white">
+	<table border="0" width="98%" height="47" ID="Table1">
+		<tr>
+			<td width="84%" height="130">
+				<p align="center">
+					<font size="4"><b>AC 6.1 Air Force Release Home Use Install/Uninstall Utility</b></font></p>
+								<table border="0" width="75%" ID="Table5">
+					<tr>
+						<td width="150" style="WIDTH: 150px; HEIGHT: 39px"></td>
+						<td width="65%" style="HEIGHT: 39px"></td>
+					</tr>
+					<tr>
+						<td width="150" style="WIDTH: 150px"><input type="radio" name="UserOption2" value="1" ID="Radio3"></td>
+						<td width="95%"><b>Install or Update ActivClient 6.1 Air Force Release</b> </td>
+					</tr>
+					<tr>
+						<td width="150" style="WIDTH: 150px"><input type="radio" name="UserOption2" value="2" ID="Radio4"></td>
+						<td width="95%"><b>Uninstall ActivClient 6.1 Air Force Release<b> </td>
+					</tr>
+					
+				</table>
+			</td>
+			<td width="17%" height="130"><p align="center"><img border="0" src="aflogo.jpg" width="146" height="149"></p>
+			</td>
+		<tr>
+			<td width="20%" height="41"></td>
+		</tr>
+	</table>
+	
+	<input type="button" value="Submit" name="btnOK" ID="Button1"> <input id="Exitbutton" type="button" value="Exit" name="Exitbutton" onClick="ExitSub">
+	<table border="0" width="100%" height="96" ID="Table4">
+		<tr>
+			<td width="100%" height="90">
+				<span id="section1" name="section1"></span>
+			</td>
+		</tr>
+	</table>
+	<p>&nbsp;</p>
+</body>
+
